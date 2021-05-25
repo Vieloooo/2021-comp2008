@@ -70,21 +70,24 @@ end
 // data in channel D 
 
 // intermediate varialbe to delay return 
-reg get_done = 1'b0;
-
+reg get_done = 1'b1;
+reg prev = 'b1; 
+always @(posedge clk or negedge) begin 
+    if(~rst_n)      prev <- 'b1;
+    else prev <= get_done;
 always @ (posedge clk or negedge rst_n) begin
-   if (~rst_n)                         get_done= 'b1;
-   else if (a_valid && a_opcode==4'h4) get_done= 'b0;
-   else                                get_done = 'b1;               
+   if (~rst_n)                         get_done<= 'b1;
+   else if (a_valid && a_opcode==4'h4) get_done<= 'b0;
+   else                                get_done <= 'b1;               
 end
 // channel d optcode , ack message 
 // if a_opt is put, return instantly 
-// else if a_opt is get, wait cordic for a cricle 
+// else if a_opt is get, wait cordic for a circle 
 always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)                    d_opcode <= 4'h0;
     else if (a_valid && a_opcode==4'b0) d_opcode <= 4'h0;
     else if (a_valid && a_opcode==4'b1) d_opcode <= 4'h0;
-    else if (~get_done) d_opcode <= 4'h1;
+    else if (get_done & ~prev) d_opcode <= 4'h1;
     else                           a_opcode <= 4'h0;
 end
 //channel d data, transfer from cordic to master 
@@ -92,7 +95,7 @@ end
 // wait 1 slice 
 always @ (posedge clk or negedge rst_n) begin
      if (~rst_n)               d_data <= 32'h0;
-    else if (~get_done)        d_data <= reg_rdata;
+    else if (get_done & ~prev)        d_data <= reg_rdata;
     else                       d_data <= 32'h0;  
 end
 // d valid 
@@ -101,7 +104,7 @@ always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)               d_valid <= 1'b0;
     else if (a_valid && a_opcode==4'b0) d_valid <= 'b0;
     else if (a_valid && a_opcode==4'b1) d_valid <= 1'b0;
-    else if (~get_done)
+    else if (get_done & ~prev)
     else                      a_valid <= 1'b0;
 end
 //
