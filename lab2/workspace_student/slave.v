@@ -2,7 +2,7 @@ module slave (
     input  wire        clk      ,   
     input  wire        rst_n    ,
     // res to master 
-    output reg         a_ready  ,// done 
+    output wire        a_ready  ,// done 
     // m tells s, if the data in channel-A is valid 
     input  wire        a_valid  ,  
     // datas 
@@ -27,11 +27,13 @@ module slave (
     input  wire [31:0] reg_rdata
 );
 
+assign a_ready = rst_n & d_ready;
+/*
 always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)               a_ready <= 1'b0;
     else                      a_ready <= d_ready;
 end
-
+*/
 // send data to cordic 
 // write enable 
 always @ (posedge clk or negedge rst_n) begin
@@ -63,7 +65,7 @@ always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)      reg_wdata <= 32'h0;
     else if (a_valid && a_opcode==4'b0) reg_wdata<=a_data ;
     else if (a_valid && a_opcode==4'b1) reg_wdata<=a_data ;
-    else             a_data <= 32'h0;  
+    else             reg_wdata <= 32'h0;  
 end
 //data to cordic finished 
 //******************************
@@ -71,10 +73,11 @@ end
 
 // intermediate varialbe to delay return 
 reg get_done = 1'b1;
-reg prev = 'b1; 
-always @(posedge clk or negedge) begin 
-    if(~rst_n)      prev <- 'b1;
-    else prev <= get_done;
+reg prev = 1'b1; 
+always @(posedge clk or negedge rst_n) begin 
+    if(~rst_n)      prev <= 'b1;
+    else         prev <= get_done;
+    end 
 always @ (posedge clk or negedge rst_n) begin
    if (~rst_n)                         get_done<= 'b1;
    else if (a_valid && a_opcode==4'h4) get_done<= 'b0;
@@ -88,7 +91,7 @@ always @ (posedge clk or negedge rst_n) begin
     else if (a_valid && a_opcode==4'b0) d_opcode <= 4'h0;
     else if (a_valid && a_opcode==4'b1) d_opcode <= 4'h0;
     else if (get_done & ~prev) d_opcode <= 4'h1;
-    else                           a_opcode <= 4'h0;
+    else                           d_opcode <= 4'h0;
 end
 //channel d data, transfer from cordic to master 
 // need to wait for cordic to process cordic 
@@ -102,10 +105,10 @@ end
 //if put(), return instantly 
 always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)               d_valid <= 1'b0;
-    else if (a_valid && a_opcode==4'b0) d_valid <= 'b0;
-    else if (a_valid && a_opcode==4'b1) d_valid <= 1'b0;
-    else if (get_done & ~prev)
-    else                      a_valid <= 1'b0;
+    else if (a_valid && a_opcode==4'b0) d_valid <= 'b1;
+    else if (a_valid && a_opcode==4'b1) d_valid <= 1'b1;
+    else if (get_done & ~prev)          d_valid <= 1'b1;
+    else                      d_valid <= 1'b0;
 end
 //
 endmodule

@@ -33,6 +33,11 @@ always @ (posedge clk or negedge rst_n) begin
     else if (cpu_wr | cpu_rd) d_ready <= 1'b1;
 end
 
+always @ (posedge clk or negedge rst_n) begin
+    if (~rst_n)               a_valid <= 1'b0;
+    else if (cpu_wr | cpu_rd) a_valid <= 1'b1;
+    else                      a_valid <= 1'b0;
+end
 
 always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)                    a_opcode <= 4'h0;
