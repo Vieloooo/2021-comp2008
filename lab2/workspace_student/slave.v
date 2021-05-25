@@ -13,16 +13,16 @@ module slave (
     // m tells s , if m is available 
     input  wire        d_ready  ,
     // s tells m, if the data in channel-D is valid 
-    output reg         d_valid  ,
+    output reg         d_valid  ,//done
     // data in channel-D 
     output reg  [3:0]  d_opcode ,//done
     output reg  [31:0] d_data   ,
     // data to cordic module 
-    output reg         reg_wr   ,
-    output reg         reg_rd   ,
-    output reg  [3:0]  reg_byte ,
-    output reg  [3:0]  reg_addr ,
-    output reg  [31:0] reg_wdata,
+    output reg         reg_wr   ,//done
+    output reg         reg_rd   ,//done
+    output reg  [3:0]  reg_byte ,//done
+    output reg  [3:0]  reg_addr ,//done
+    output reg  [31:0] reg_wdata,//done
     // res from cordic 
     input  wire [31:0] reg_rdata
 );
@@ -62,24 +62,47 @@ end
 always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)      reg_wdata <= 32'h0;
     else if (a_valid && a_opcode==4'b0) reg_wdata<=a_data ;
-    else if (a_valid && a_opcode==4'b0) reg_wdata<=a_data ;
+    else if (a_valid && a_opcode==4'b1) reg_wdata<=a_data ;
     else             a_data <= 32'h0;  
 end
 //data to cordic finished 
-// channel d optcode , ack message 
+//******************************
+// data in channel D 
+
+// intermediate varialbe to delay return 
+reg get_done = 1'b0;
 
 always @ (posedge clk or negedge rst_n) begin
+   if (~rst_n)                         get_done= 'b1;
+   else if (a_valid && a_opcode==4'h4) get_done= 'b0;
+   else                                get_done = 'b1;               
+end
+// channel d optcode , ack message 
+// if a_opt is put, return instantly 
+// else if a_opt is get, wait cordic for a cricle 
+always @ (posedge clk or negedge rst_n) begin
     if (~rst_n)                    d_opcode <= 4'h0;
-    else if (a_valid && a_opcode==4'b0) d_opcode <= 4'h0;//(&cpu-byte==4'b1111)
+    else if (a_valid && a_opcode==4'b0) d_opcode <= 4'h0;
     else if (a_valid && a_opcode==4'b1) d_opcode <= 4'h0;
-    else if (a_valid && a_opcode==4'h4) d_opcode <= 4'h1;
+    else if (~get_done) d_opcode <= 4'h1;
     else                           a_opcode <= 4'h0;
 end
-//d data 
+//channel d data, transfer from cordic to master 
+// need to wait for cordic to process cordic 
+// wait 1 slice 
 always @ (posedge clk or negedge rst_n) begin
-     if (~rst_n)      d_data <= 32'h0;
-    else if () a_data <= reg_rdata;
-    else             a_data <= 32'h0;  
+     if (~rst_n)               d_data <= 32'h0;
+    else if (~get_done)        d_data <= reg_rdata;
+    else                       d_data <= 32'h0;  
 end
 // d valid 
+//if put(), return instantly 
+always @ (posedge clk or negedge rst_n) begin
+    if (~rst_n)               d_valid <= 1'b0;
+    else if (a_valid && a_opcode==4'b0) d_valid <= 'b0;
+    else if (a_valid && a_opcode==4'b1) d_valid <= 1'b0;
+    else if (~get_done)
+    else                      a_valid <= 1'b0;
+end
+//
 endmodule
