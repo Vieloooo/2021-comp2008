@@ -71,7 +71,7 @@ end
 //******************************
 // data in channel D 
 
-// intermediate varialbe to delay return 
+// intermediate variables to delay return 
 reg get_done = 1'b1;
 reg prev = 1'b1; 
 always @(posedge clk or negedge rst_n) begin 
