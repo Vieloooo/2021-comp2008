@@ -48,7 +48,7 @@
 
 
 // IP VLNV: xilinx.com:ip:blk_mem_gen:8.4
-// IP Revision: 2
+// IP Revision: 4
 
 `timescale 1ns/1ps
 
@@ -73,9 +73,9 @@ input wire [7 : 0] dina;
 (* X_INTERFACE_INFO = "xilinx.com:interface:bram:1.0 BRAM_PORTA DOUT" *)
 output wire [7 : 0] douta;
 
-  blk_mem_gen_v8_4_2 #(
-    .C_FAMILY("artix7"),
-    .C_XDEVICEFAMILY("artix7"),
+  blk_mem_gen_v8_4_4 #(
+    .C_FAMILY("kintex7"),
+    .C_XDEVICEFAMILY("kintex7"),
     .C_ELABORATION_DIR("./"),
     .C_INTERFACE_TYPE(0),
     .C_AXI_TYPE(1),
